@@ -5,8 +5,12 @@
 // under `slate test --js`, `slate:time` being one of the things the JavaScript back end still owes.
 
 import { log, debug, info, warn, error, setLevel, setSink, setClock, writes, text, json, reset, Record } from "../logger.sl"
+import { appendFile, readFile, remove } from slate:fs
 
 val Stamp = "2026-09-03T18:19:05Z"
+
+// Where the file sink writes while the last test is running.
+val Log = "logger-sink-test.log"
 
 // A sink that keeps what it was given, and the package put back the way it was found.
 watching() -> array
@@ -175,3 +179,37 @@ reset_PUTS_THE_LEVEL_THE_SINK_AND_THE_CLOCK_BACK()
 
     assertEq(writes("info"), true)
     assertEq(len(seen), 0, "and the sink is no longer the one this test installed")
+
+@test
+async THE_FILE_SINK_THE_README_SHOWS_WRITES_A_LINE_PER_RECORD()
+    // The README's file sink, run rather than described. `stderr` is its other one and is not
+    // asserted here: what a test could check about it is that it wrote nothing to stdout, and the
+    // way to see that is to read this suite's own output.
+    //
+    // **The sink keeps each append's promise**, which the README's one-liner does not: a sink
+    // answers nothing, so a program that has to KNOW a record reached the disk holds the promise
+    // itself. Without that this test would read the file before the loop had written it, which is
+    // what it did first.
+    var landed = []
+
+    reset()
+    setClock(() -> Stamp)
+    setSink((r) -> push(landed, appendFile(Log, json(r) + "\n")))
+
+    await remove(Log)
+
+    info("first", { at: "one" })
+    info("second", { at: "two" })
+
+    for w in landed
+        await w
+
+    val back = await readFile(Log)
+
+    assert(back.ok, "the sink made the file")
+    assertEq(len(split(trim(back.value), "\n")), 2)
+    assert(contains(back.value, "\"at\":\"one\""))
+    assert(contains(back.value, "\"at\":\"two\""))
+
+    await remove(Log)
+    reset()

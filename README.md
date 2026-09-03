@@ -72,22 +72,37 @@ import { send } from slate:net
 setSink((r) -> send(collector, json(r) + "\n"))
 ```
 
-**Two things a server usually wants are not available in slate today**, so they are worth saying
-plainly rather than showing in a form that does not compile: `slate:process` has no `stderr`, and
-`slate:fs` has `writeFile` and no append. A program that wants a log file keeps the lines and writes
-them out:
+**The two a server usually wants are one line each.** Down the error stream, so that what a program
+says about its work stays out of what it produces:
+
+```slate
+import { setSink, text } from logger
+import { stderr } from slate:process
+
+setSink((r) -> stderr(text(r) + "\n"))
+```
+
+Or onto the end of a file, which is `O_APPEND` and not a read followed by a write, so a record is
+never half a line and nothing already in the file is lost:
 
 ```slate
 import { setSink, json } from logger
-import { writeFile } from slate:fs
+import { appendFile } from slate:fs
 
-var lines = []
-
-setSink((r) -> push(lines, json(r)))
-
-// ... and, when the program is stopping:
-await writeFile("app.log", join(lines, "\n"))
+setSink((r) -> appendFile("app.log", json(r) + "\n"))
 ```
+
+**The append is not awaited, and a sink answers nothing that could carry it** — the write goes onto
+the loop and the line lands a moment later. That is what a log wants. A program that has to KNOW a
+record reached the disk keeps the promise the sink made:
+
+```slate
+var landed = []
+
+setSink((r) -> push(landed, appendFile("app.log", json(r) + "\n")))
+```
+
+Both sinks need slate 0.0.23.
 
 ## With `sluice`
 
