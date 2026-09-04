@@ -122,10 +122,6 @@ app.get("/notes", logger((r) -> info("request", r), handler))
 one that does not move — a record's `time` is the one field nothing else can predict — and this
 package's own suite is written that way.
 
-**It is also how a host without `slate:time` gets a timestamp.** `now` is among the builtins the
-JavaScript back end still owes, so a program under node or in a browser supplies its own clock until
-that lands; everything else here already runs there, which `slate test --js tests` proves.
-
 ## Running the suite
 
 ```
@@ -133,7 +129,7 @@ slate test tests
 slate test --js tests
 ```
 
-Both are green. `check/clock.sl` is the one thing that is not in the suite, and `check/README.md`
-says why.
+Both are green, and every line of the package is in them.
 
-**It needs slate 0.0.22 or later.**
+**It needs slate 0.0.22 or later** — and **0.0.25 under node or in a browser**, where the default
+clock is `slate:time`'s instant. A program on an older JavaScript host supplies its own `setClock`.

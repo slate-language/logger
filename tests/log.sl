@@ -1,11 +1,12 @@
 // The whole package, from the outside.
 //
-// **Every test here sets a clock that does not move**, which is what a log suite wants anyway: a
-// record's `time` is the one field nothing else can predict. It is also what makes this suite run
-// under `slate test --js`, `slate:time` being one of the things the JavaScript back end still owes.
+// **Every test here but the last sets a clock that does not move**, which is what a log suite wants
+// anyway: a record's `time` is the one field nothing else can predict. The last one leaves the
+// default clock in place, because that line is otherwise the one thing nothing here would run.
 
 import { log, debug, info, warn, error, setLevel, setSink, setClock, writes, text, json, reset, Record } from "../logger.sl"
 import { appendFile, readFile, remove } from slate:fs
+import { now } from slate:time
 
 val Stamp = "2026-09-03T18:19:05Z"
 
@@ -213,3 +214,45 @@ async THE_FILE_SINK_THE_README_SHOWS_WRITES_A_LINE_PER_RECORD()
 
     await remove(Log)
     reset()
+
+// The first nineteen characters of an instant's text, which is `YYYY-MM-DDThh:mm:ss`.
+//
+// **The fraction is what makes the full rendering variable width** -- it appears only when it is
+// non-zero -- so two stamps a second apart do not reliably compare as text. Cutting it off leaves a
+// fixed-width prefix, which does.
+toTheSecond(stamp: string) -> string = join(slice(chars(stamp), 0, 19), "")
+
+@test
+THE_DEFAULT_CLOCK_STAMPS_A_RECORD_WITH_THE_MOMENT_IT_WAS_MADE()
+    // The one line of this package every other test here deliberately steps around: they all install
+    // a clock that does not move, so the default -- `slate:time`'s `now` -- is never exercised.
+    //
+    // **The bracket is cut to the second because an instant's text is variable width**: the fraction
+    // is written only when it is non-zero, so `...:46Z` sorts after `...:46.5Z` and a comparison of
+    // the full renderings would be wrong about one reading in a few hundred. `parseTimestamp` would
+    // have been the obvious tool, and the JavaScript back end does not have it.
+    //
+    // **The default SINK is exercised too, and what that is worth is worth saying.** A test cannot
+    // read this host's standard output, so the two lines below are checked by running: a `print` or a
+    // `text` that faulted would fail this test, and nothing here can see the text that was written.
+    var seen = []
+
+    reset()
+
+    val before = toTheSecond(string(now()))
+
+    setSink((r) -> push(seen, r))
+    info("the default clock stamps a record")
+
+    val after = toTheSecond(string(now()))
+    val stamped = toTheSecond(seen[0].time)
+
+    assert(stamped >= before, "the stamp is at or after the reading taken before the record")
+    assert(stamped <= after, "the stamp is at or before the reading taken after the record")
+    assert(endsWith(seen[0].time, "Z"), "an instant's text is UTC")
+    assertEq(len(before), 19)
+
+    reset()
+
+    assert(info("the default sink writes this line of text") != null)
+    assert(warn("and the default clock stamps it", { at: "this moment" }) != null)
