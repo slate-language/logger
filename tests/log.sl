@@ -71,7 +71,7 @@ A_LEVEL_BELOW_THE_ONE_SET_IS_NOT_WRITTEN_AND_ANSWERS_null()
     assert(warn("written") != null)
     assert(error("written") != null)
 
-    assertEq(len(seen), 2)
+    assertEq(seen.length, 2)
     assertEq([seen[0].level, seen[1].level], ["warn", "error"])
 
     reset()
@@ -85,7 +85,7 @@ debug_IS_THE_LEVEL_THAT_WRITES_EVERYTHING_AND_info_IS_THE_DEFAULT()
     setLevel("debug")
 
     assert(debug("written now") != null)
-    assertEq(len(seen), 1)
+    assertEq(seen.length, 1)
 
     reset()
 
@@ -179,7 +179,7 @@ reset_PUTS_THE_LEVEL_THE_SINK_AND_THE_CLOCK_BACK()
     reset()
 
     assertEq(writes("info"), true)
-    assertEq(len(seen), 0, "and the sink is no longer the one this test installed")
+    assertEq(seen.length, 0, "and the sink is no longer the one this test installed")
 
 @test
 async THE_FILE_SINK_THE_README_SHOWS_WRITES_A_LINE_PER_RECORD()
@@ -208,7 +208,7 @@ async THE_FILE_SINK_THE_README_SHOWS_WRITES_A_LINE_PER_RECORD()
     val back = await readFile(Log)
 
     assert(back.ok, "the sink made the file")
-    assertEq(len(split(trim(back.value), "\n")), 2)
+    assertEq(split(trim(back.value), "\n").length, 2)
     assert(contains(back.value, "\"at\":\"one\""))
     assert(contains(back.value, "\"at\":\"two\""))
 
@@ -250,7 +250,7 @@ THE_DEFAULT_CLOCK_STAMPS_A_RECORD_WITH_THE_MOMENT_IT_WAS_MADE()
     assert(stamped >= before, "the stamp is at or after the reading taken before the record")
     assert(stamped <= after, "the stamp is at or before the reading taken after the record")
     assert(endsWith(seen[0].time, "Z"), "an instant's text is UTC")
-    assertEq(len(before), 19)
+    assertEq(before.length, 19)
 
     reset()
 

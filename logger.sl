@@ -150,7 +150,7 @@ quoted(v: string) -> string =
 padded(name: string) -> string
     var out = name
 
-    while len(out) < 5
+    while out.length < 5
         out = out + " "
 
     out
