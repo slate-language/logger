@@ -116,6 +116,43 @@ AN_UNKNOWN_LEVEL_IS_REFUSED_WHEREVER_IT_IS_WRITTEN()
     reset()
 
 @test
+WRITES_ORDERS_EVERY_LEVEL_AGAINST_EVERY_SETTING()
+    // A level is written exactly when it sits at or above the one set -- checked for all sixteen
+    // pairs, so the two ends of the table compare as well as the middle.
+    val levels = ["debug", "info", "warn", "error"]
+
+    for set in 0..<levels.length
+        setLevel(levels[set])
+
+        for asked in 0..<levels.length
+            assertEq(writes(levels[asked]), asked >= set)
+
+    reset()
+
+@test
+WRITES_REFUSES_A_LEVEL_NOT_IN_THE_TABLE_WITH_A_SENTENCE_NOT_A_COMPARISON_FAULT()
+    // A level the table does not hold never reaches `>=` as `null`: it is refused by name, at every
+    // setting, including the most and least severe.
+    for set in ["debug", "error"]
+        setLevel(set)
+
+        var said = null
+
+        writes("fatal") catch e ->
+            said = e.message
+
+        assertEq(said, "`fatal` is not a level -- they are debug, info, warn, error")
+
+        said = null
+
+        writes("") catch e ->
+            said = e.message
+
+        assertEq(said, "`` is not a level -- they are debug, info, warn, error")
+
+    reset()
+
+@test
 A_FIELD_MAY_NOT_BE_ONE_OF_THE_THREE_A_RECORD_ALREADY_HAS()
     // Letting one through would mean a record whose level is whatever the caller happened to pass.
     var said = null

@@ -98,14 +98,24 @@ export warn(message: string, fields: object = {}) -> object | null = log("warn",
 export error(message: string, fields: object = {}) -> object | null = log("error", message, fields)
 
 // Whether a level is written at the level now set.
-export writes(want: string) -> boolean = indexOf(Levels, checked(want)) >= indexOf(Levels, level)
+export writes(want: string) -> boolean = rank(want) >= rank(level)
 
 // A level, or a fault naming the ones there are.
 checked(want: string) -> string
-    if indexOf(Levels, want) == null
-        throw "`" + want + "` is not a level -- they are " + join(Levels, ", ")
+    rank(want)
 
     want
+
+// Where a level sits in `Levels`, or a fault naming the ones there are. **The one place a level is
+// looked up**, so a level not in the table is refused here with a sentence rather than reaching a
+// comparison as `null`, where `>=` would fault with nothing to say about which level was wrong.
+rank(want: string) -> integer
+    val at = indexOf(Levels, want)
+
+    if at == null
+        throw "`" + want + "` is not a level -- they are " + join(Levels, ", ")
+
+    at
 
 // The record itself.
 //
